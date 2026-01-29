@@ -4,6 +4,17 @@ pipeline {
         stage('Checkout') {
             steps { checkout scm }
         }
+        stage('InfluxDB Setup') {
+            steps {
+                bat '''
+                    docker stop influxdb 2>nul && docker rm influxdb 2>nul || echo "Cleanup"
+                    docker run -d --name influxdb -p 8086:8086 ^
+                        -e INFLUXDB_DB=jmeter influxdb:1.8
+                    timeout /t 15 /nobreak >nul
+                    docker exec influxdb influx -execute "CREATE DATABASE jmeter"
+                '''
+            }
+        }
         stage('JMeter') {
             steps {
                 bat '''
